@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Thumbnail Generator - C++ WASM</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-text {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        input, select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .status.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+        
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .thumbnails {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .thumbnail {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        
+        .thumbnail:hover {
+            transform: scale(1.05);
+        }
+        
+        .thumbnail img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .thumbnail-info {
+            padding: 10px;
+            background: #f8f9fa;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .video-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .video-info h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .info-value {
+            color: #333;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Video Thumbnail Generator</h1>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-text">Drop video file here or click to select</div>
+            <input type="file" id="fileInput" class="file-input" accept="video/*">
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="width">Width</label>
+                <input type="number" id="width" value="320" min="64" max="1920">
+            </div>
+            <div class="control-group">
+                <label for="height">Height</label>
+                <input type="number" id="height" value="240" min="64" max="1080">
+            </div>
+            <div class="control-group">
+                <label for="quality">Quality</label>
+                <input type="range" id="quality" min="1" max="100" value="85">
+            </div>
+            <div class="control-group">
+                <label for="format">Format</label>
+                <select id="format">
+                    <option value="jpeg">JPEG</option>
+                    <option value="png">PNG</option>
+                    <option value="webp">WebP</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button class="btn" id="generateBtn" disabled>Generate Thumbnails</button>
+        </div>
+        
+        <div id="status"></div>
+        <div id="videoInfo"></div>
+        <div id="thumbnails" class="thumbnails"></div>
+    </div>
+
+    <script type="module">
+        let wasmModule = null;
+        let currentVideoData = null;
+        
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const statusDiv = document.getElementById('status');
+        const videoInfoDiv = document.getElementById('videoInfo');
+        const thumbnailsDiv = document.getElementById('thumbnails');
+        
+        function showStatus(message, type = 'loading') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function clearStatus() {
+            statusDiv.innerHTML = '';
+        }
+        
+        async function loadWasmModule() {
+            try {
+                showStatus('Loading WebAssembly module...', 'loading');
+                const module = await import('../build/video_thumbnail_wasm.js');
+                wasmModule = await module.default();
+                showStatus('WebAssembly module loaded successfully!', 'success');
+                setTimeout(clearStatus, 3000);
+            } catch (error) {
+                showStatus(`Failed to load WebAssembly module: ${error.message}`, 'error');
+            }
+        }
+        
+        function handleFileSelect(file) {
+            if (!file || !file.type.startsWith('video/')) {
+                showStatus('Please select a valid video file', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentVideoData = new Uint8Array(e.target.result);
+                generateBtn.disabled = false;
+                showStatus(`Video loaded: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`, 'success');
+                
+                if (wasmModule) {
+                    try {
+                        const videoInfo = wasmModule.getVideoInfo(currentVideoData);
+                        displayVideoInfo(videoInfo);
+                    } catch (error) {
+                        console.error('Failed to get video info:', error);
+                    }
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function displayVideoInfo(info) {
+            videoInfoDiv.innerHTML = `
+                <div class="video-info">
+                    <h3>Video Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Duration</div>
+                            <div class="info-value">${info.duration.toFixed(2)}s</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Resolution</div>
+                            <div class="info-value">${info.width} × ${info.height}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">FPS</div>
+                            <div class="info-value">${info.fps.toFixed(2)}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Bitrate</div>
+                            <div class="info-value">${(info.bitrate / 1000).toFixed(0)} kbps</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Codec</div>
+                            <div class="info-value">${info.codec}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function generateThumbnails() {
+            if (!wasmModule || !currentVideoData) {
+                showStatus('Please load a video file first', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('Generating thumbnails...', 'loading');
+                generateBtn.disabled = true;
+                
+                const width = parseInt(document.getElementById('width').value);
+                const height = parseInt(document.getElementById('height').value);
+                const quality = parseInt(document.getElementById('quality').value);
+                
+                const videoInfo = wasmModule.getVideoInfo(currentVideoData);
+                const duration = videoInfo.duration;
+                
+                const timePoints = [];
+                for (let i = 0; i < 6; i++) {
+                    timePoints.push((duration / 5) * i);
+                }
+                
+                const thumbnails = wasmModule.generateMultipleThumbnails(
+                    currentVideoData,
+                    timePoints,
+                    width,
+                    height,
+                    quality
+                );
+                
+                displayThumbnails(thumbnails, timePoints);
+                showStatus(`Generated ${thumbnails.length} thumbnails successfully!`, 'success');
+                
+            } catch (error) {
+                showStatus(`Failed to generate thumbnails: ${error.message}`, 'error');
+            } finally {
+                generateBtn.disabled = false;
+            }
+        }
+        
+        function displayThumbnails(thumbnails, timePoints) {
+            thumbnailsDiv.innerHTML = '';
+            
+            thumbnails.forEach((thumbnail, index) => {
+                if (thumbnail && thumbnail.length > 0) {
+                    const blob = new Blob([thumbnail], { type: 'image/jpeg' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const thumbnailDiv = document.createElement('div');
+                    thumbnailDiv.className = 'thumbnail';
+                    thumbnailDiv.innerHTML = `
+                        <img src="${url}" alt="Thumbnail ${index + 1}">
+                        <div class="thumbnail-info">
+                            Time: ${timePoints[index].toFixed(2)}s
+                        </div>
+                    `;
+                    
+                    thumbnailsDiv.appendChild(thumbnailDiv);
+                }
+            });
+        }
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            handleFileSelect(file);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFileSelect(e.target.files[0]);
+        });
+        
+        generateBtn.addEventListener('click', generateThumbnails);
+        
+        loadWasmModule();
+    </script>
+</body>
+</html>

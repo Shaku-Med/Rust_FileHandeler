@@ -1,0 +1,29 @@
+{
+  "name": "video-thumbnail-wasm-cpp",
+  "version": "1.0.0",
+  "description": "C++ WebAssembly module for video thumbnail generation",
+  "main": "build/video_thumbnail_wasm.js",
+  "files": [
+    "build/video_thumbnail_wasm.js",
+    "build/video_thumbnail_wasm.wasm",
+    "src/",
+    "include/"
+  ],
+  "scripts": {
+    "build": "./build.sh",
+    "clean": "rm -rf build",
+    "test": "node test/test.js"
+  },
+  "keywords": [
+    "video",
+    "thumbnail",
+    "webassembly",
+    "cpp",
+    "ffmpeg"
+  ],
+  "author": "Video Thumbnail Generator",
+  "license": "MIT",
+  "devDependencies": {
+    "emscripten": "^3.1.0"
+  }
+}
