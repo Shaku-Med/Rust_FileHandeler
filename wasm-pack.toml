@@ -1,0 +1,8 @@
+[package]
+name = "video-thumbnail-wasm"
+version = "0.1.0"
+description = "Video thumbnail generation with Rust and WebAssembly"
+authors = ["Your Name <your.email@example.com>"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-mutable-globals"]
