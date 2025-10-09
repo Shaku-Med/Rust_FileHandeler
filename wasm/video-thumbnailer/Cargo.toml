@@ -1,0 +1,54 @@
+[package]
+name = "video-thumbnailer"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook"]
+
+[dependencies]
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+web-sys = { version = "0.3", features = [
+  "Window",
+  "Document",
+  "HtmlVideoElement",
+  "HtmlCanvasElement",
+  "CanvasRenderingContext2d",
+  "HtmlImageElement",
+  "MediaSource",
+  "Url",
+  "Blob",
+  "BlobPropertyBag",
+  "UrlSearchParams",
+  "HtmlElement",
+  "DomException",
+  "Element",
+  "Event",
+  "EventTarget",
+  "HtmlMediaElement",
+  "TimeRanges",
+  "HtmlImageElement",
+  "Performance",
+] }
+js-sys = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_wasm_bindgen = "0.6"
+base64 = "0.22"
+console_error_panic_hook = { version = "0.1", optional = true }
+getrandom = { version = "0.2", features = ["js"] }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[profile.release]
+lto = true
+opt-level = "s"
+codegen-units = 1
+panic = "abort"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Os"]
