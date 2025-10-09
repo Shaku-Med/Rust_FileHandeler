@@ -1,0 +1,31 @@
+cmake_minimum_required(VERSION 3.20)
+project(video_thumbnail_wasm)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(EMSCRIPTEN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -s USE_PTHREADS=1 -s PTHREAD_POOL_SIZE=4")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s EXPORTED_FUNCTIONS='[\"_malloc\", \"_free\"]'")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s EXPORTED_RUNTIME_METHODS='[\"ccall\", \"cwrap\"]'")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s ALLOW_MEMORY_GROWTH=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s MODULARIZE=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s EXPORT_NAME='VideoThumbnailModule'")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s WASM=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s NO_EXIT_RUNTIME=1")
+endif()
+
+add_library(video_thumbnail_wasm SHARED
+    src/simple_thumbnail_generator.cpp
+    src/simple_image_processor.cpp
+    src/simple_memory_manager.cpp
+    src/simple_emscripten_bindings.cpp
+)
+
+if(EMSCRIPTEN)
+    target_link_libraries(video_thumbnail_wasm pthread)
+    set_target_properties(video_thumbnail_wasm PROPERTIES
+        OUTPUT_NAME "video_thumbnail_wasm"
+        SUFFIX ".js"
+    )
+endif()

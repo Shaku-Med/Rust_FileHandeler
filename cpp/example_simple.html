@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C++ WebAssembly Video Thumbnail Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .status.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+        
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .demo-area {
+            text-align: center;
+            padding: 40px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .info-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .info-value {
+            color: #333;
+            font-size: 18px;
+            margin-top: 5px;
+        }
+        
+        .thumbnail-demo {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .thumbnail-demo img {
+            max-width: 200px;
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>C++ WebAssembly Video Thumbnail Generator</h1>
+        
+        <div id="status"></div>
+        
+        <div class="demo-area">
+            <h3>WebAssembly Module Status</h3>
+            <div id="moduleInfo"></div>
+            <button class="btn" id="testBtn" disabled>Test Thumbnail Generation</button>
+        </div>
+        
+        <div class="thumbnail-demo" id="thumbnailDemo" style="display: none;">
+            <h3>Generated Thumbnails</h3>
+            <div id="thumbnails"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        let wasmModule = null;
+        
+        const statusDiv = document.getElementById('status');
+        const moduleInfoDiv = document.getElementById('moduleInfo');
+        const testBtn = document.getElementById('testBtn');
+        const thumbnailDemo = document.getElementById('thumbnailDemo');
+        const thumbnailsDiv = document.getElementById('thumbnails');
+        
+        function showStatus(message, type = 'loading') {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function clearStatus() {
+            statusDiv.innerHTML = '';
+        }
+        
+        async function loadWasmModule() {
+            try {
+                showStatus('Loading C++ WebAssembly module...', 'loading');
+                const module = await import('./build/video_thumbnail_wasm.js');
+                wasmModule = await module.default();
+                
+                wasmModule.initialize();
+                
+                const memoryUsage = wasmModule.getMemoryUsage();
+                const supportedFormats = wasmModule.getSupportedFormats();
+                
+                moduleInfoDiv.innerHTML = `
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Status</div>
+                            <div class="info-value">✅ Loaded</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Memory Usage</div>
+                            <div class="info-value">${memoryUsage} bytes</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Available Functions</div>
+                            <div class="info-value">${Object.keys(wasmModule).length}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Supported Formats</div>
+                            <div class="info-value">${supportedFormats.size()} formats</div>
+                        </div>
+                    </div>
+                `;
+                
+                testBtn.disabled = false;
+                showStatus('C++ WebAssembly module loaded successfully!', 'success');
+                setTimeout(clearStatus, 3000);
+                
+            } catch (error) {
+                showStatus(`Failed to load WebAssembly module: ${error.message}`, 'error');
+            }
+        }
+        
+        function testThumbnailGeneration() {
+            try {
+                showStatus('Generating test thumbnails...', 'loading');
+                
+                const testVideoData = new Uint8Array(1024);
+                for (let i = 0; i < testVideoData.length; i++) {
+                    testVideoData[i] = Math.floor(Math.random() * 256);
+                }
+                
+                const videoDataVector = new wasmModule.vector$uint8_t$();
+                for (let i = 0; i < testVideoData.length; i++) {
+                    videoDataVector.push_back(testVideoData[i]);
+                }
+                
+                const isSupported = wasmModule.isVideoSupported(videoDataVector);
+                console.log('Video supported:', isSupported);
+                
+                if (isSupported) {
+                    const thumbnail = wasmModule.generateThumbnail(videoDataVector, 1.0, 320, 240, 85);
+                    
+                    if (thumbnail && thumbnail.size() > 0) {
+                        const thumbnailArray = new Uint8Array(thumbnail.size());
+                        for (let i = 0; i < thumbnail.size(); i++) {
+                            thumbnailArray[i] = thumbnail.get(i);
+                        }
+                        
+                        const blob = new Blob([thumbnailArray], { type: 'image/jpeg' });
+                        const url = URL.createObjectURL(blob);
+                        
+                        thumbnailsDiv.innerHTML = `
+                            <img src="${url}" alt="Generated Thumbnail">
+                            <p>Generated thumbnail: ${thumbnail.size()} bytes</p>
+                        `;
+                        
+                        thumbnailDemo.style.display = 'block';
+                        showStatus('Thumbnail generated successfully!', 'success');
+                    } else {
+                        showStatus('Failed to generate thumbnail', 'error');
+                    }
+                } else {
+                    showStatus('Video format not supported', 'error');
+                }
+                
+            } catch (error) {
+                showStatus(`Thumbnail generation failed: ${error.message}`, 'error');
+            }
+        }
+        
+        testBtn.addEventListener('click', testThumbnailGeneration);
+        
+        loadWasmModule();
+    </script>
+</body>
+</html>
