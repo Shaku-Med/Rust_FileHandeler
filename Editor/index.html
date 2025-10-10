@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Editor Pro</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .editor-container {
+            display: grid;
+            grid-template-rows: 60px 1fr 250px;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: #2d2d2d;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-right: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .header button:hover {
+            background: #764ba2;
+        }
+
+        .header button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Main Workspace */
+        .workspace {
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            gap: 10px;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        /* Left Panel - Media Library */
+        .media-panel {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .media-panel h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .upload-zone {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 15px;
+        }
+
+        .upload-zone:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .media-item {
+            background: #3d3d3d;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: move;
+            transition: background 0.2s;
+        }
+
+        .media-item:hover {
+            background: #4d4d4d;
+        }
+
+        .media-item video {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+
+        .media-item-name {
+            font-size: 12px;
+            color: #ccc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Center - Preview */
+        .preview-panel {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #previewCanvas {
+            width: 100%;
+            max-width: 800px;
+            max-height: 450px;
+            background: #000;
+            border-radius: 10px;
+        }
+
+        .preview-controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .preview-controls button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 24px;
+        }
+
+        .preview-controls button:hover {
+            background: #764ba2;
+        }
+
+        .time-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        /* Right Panel - Properties */
+        .properties-panel {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .properties-panel h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .property-group {
+            margin-bottom: 20px;
+        }
+
+        .property-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .property-group input,
+        .property-group select,
+        .property-group textarea {
+            width: 100%;
+            padding: 8px;
+            background: #3d3d3d;
+            border: 1px solid #4d4d4d;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .property-group button {
+            width: 100%;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .property-group button:hover {
+            background: #764ba2;
+        }
+
+        /* Timeline */
+        .timeline-panel {
+            background: #2d2d2d;
+            border-top: 2px solid #667eea;
+            padding: 15px;
+            overflow-x: auto;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .timeline-ruler {
+            background: #3d3d3d;
+            height: 30px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: #ff4444;
+            z-index: 10;
+        }
+
+        .timeline-tracks {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .timeline-track {
+            background: #3d3d3d;
+            height: 60px;
+            border-radius: 5px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 5px;
+        }
+
+        .track-label {
+            position: absolute;
+            left: 10px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .timeline-clip {
+            position: absolute;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            border: 2px solid transparent;
+            transition: border 0.2s;
+        }
+
+        .timeline-clip:hover {
+            border-color: #fff;
+        }
+
+        .timeline-clip.selected {
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Export Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #2d2d2d;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #3d3d3d;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .download-section {
+            margin-top: 20px;
+        }
+
+        .download-link {
+            display: block;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .download-link:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎬 Video Editor Pro</h1>
+            <button id="newProjectBtn">New Project</button>
+            <button id="exportBtn" disabled>Export Video</button>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="workspace">
+            <!-- Left Panel - Media Library -->
+            <div class="media-panel">
+                <h3>📚 Media Library</h3>
+                <div class="upload-zone" id="uploadZone">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                    <div>Click or Drop Videos Here</div>
+                    <input type="file" id="mediaInput" accept="video/*" multiple style="display: none;">
+                </div>
+                <div id="mediaList"></div>
+            </div>
+
+            <!-- Center - Preview -->
+            <div class="preview-panel">
+                <canvas id="previewCanvas" width="1920" height="1080"></canvas>
+                <div class="preview-controls">
+                    <button id="playBtn">▶️</button>
+                    <button id="pauseBtn">⏸️</button>
+                    <button id="stopBtn">⏹️</button>
+                    <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Properties -->
+            <div class="properties-panel">
+                <h3>⚙️ Properties</h3>
+                <div id="propertiesContent">
+                    <p style="color: #999;">Select a clip to edit properties</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline-panel">
+            <div class="timeline-header">
+                <h3>🎞️ Timeline</h3>
+                <div>
+                    <button style="padding: 5px 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;" id="addTextBtn">
+                        Add Text
+                    </button>
+                </div>
+            </div>
+            <div class="timeline-ruler" id="timelineRuler">
+                <div class="timeline-marker" id="playheadMarker"></div>
+            </div>
+            <div class="timeline-tracks" id="timelineTracks">
+                <div class="timeline-track" id="videoTrack1" data-track="video1">
+                    <span class="track-label">Video Track 1</span>
+                </div>
+                <div class="timeline-track" id="videoTrack2" data-track="video2">
+                    <span class="track-label">Video Track 2</span>
+                </div>
+                <div class="timeline-track" id="textTrack" data-track="text">
+                    <span class="track-label">Text Track</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <h2>Export Video</h2>
+            <div class="property-group">
+                <label>Output Format:</label>
+                <select id="exportFormat">
+                    <option value="hls">HLS (Streaming)</option>
+                    <option value="mp4">MP4 (Download)</option>
+                </select>
+            </div>
+            <div class="property-group">
+                <label>Quality:</label>
+                <select id="exportQuality">
+                    <option value="high">High (Best Quality)</option>
+                    <option value="medium">Medium (Balanced)</option>
+                    <option value="low">Low (Fastest)</option>
+                </select>
+            </div>
+            <div class="property-group">
+                <button id="startExportBtn">Start Export</button>
+                <button onclick="document.getElementById('exportModal').classList.remove('active')" style="background: #666; margin-top: 10px;">
+                    Cancel
+                </button>
+            </div>
+            <div class="progress-bar" id="exportProgress" style="display: none;">
+                <div class="progress-fill" id="exportProgressFill"></div>
+            </div>
+            <div id="exportStatus" style="color: #ccc; text-align: center; margin-top: 10px;"></div>
+            <div class="download-section" id="downloadSection" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="build/editor.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.9.7/dist/ffmpeg.min.js"></script>
+    <script src="src/timeline.js"></script>
+    <script src="src/preview.js"></script>
+    <script src="src/effects.js"></script>
+</body>
+</html>
